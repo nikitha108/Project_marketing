@@ -38,9 +38,9 @@ For my deep dive into the customer segmentation analysis, I harnessed the power 
 - **Visual Studio Code:** My go-to for executing my Python scripts.
 - **Git & GitHub:** Essential for version control and sharing my Python code and analysis, ensuring collaboration and project tracking.
 
-# Data Preparation and Cleanup
+# Data Preparation and EDA 
 
-This section outlines the steps taken to prepare the data for analysis, ensuring accuracy and usability.
+This section outlines the steps taken to prepare the data for analysis, ensuring accuracy and usability. The notebook with detailed steps here: [Exploratory Data Analysis](EDA.ipynb)
 
 ## Import & Clean Up Data
 
@@ -61,290 +61,262 @@ df = pd.read_csv("C:/Users/admin/Desktop/Portfolio projects/Project_marketing/da
 
 ```   
      
-# Exploratory Data Analysis
+## Exploratory Data Analysis
 
-To understand the structure and content of the dataset, I did :
+To understand the structure and content of the dataset, I did the following steps :
 
 1. Use the describe() to get the summary statistics 
 
 ```python
-
+df.describe()
 ```
+![](image.png)
 
-# The Analysis
+From this , we could see that there is no missing values in this data. 
 
-Each Jupyter notebook for this project aimed at investigating specific aspects of the data job market. Here’s how I approached each question:
+2. Check for duplicates using 
+``` python 
+df.duplicated().sum()
+```
+There were no duplicates found in the dataset
 
-## 1. What are the most demanded skills for the top 3 most popular data roles?
+3. Exploring the data through visualizations to understand the relation between the different variables
 
-To find the most demanded skills for the top 3 most popular data roles. I filtered out those positions by which ones were the most popular, and got the top 5 skills for these top 3 roles. This query highlights the most popular job titles and their top skills, showing which skills I should pay attention to depending on the role I'm targeting. 
+### Spending vs Gender
 
-View my notebook with detailed steps here: [skill_Demand](skills_demand.ipynb).
+![](<images/spending vs gender.png>)*Bar chart showing the spending vs gender score.*
 
-### Visualize Data
+### Distribution Graphs
 
 ```python
-fig , ax = plt.subplots(len(job_titles), 1)
+    #Distribution of gender and preferred catoegory
 
-sns.set_theme(style='ticks')
+    cat_features = ['gender','preferred_catorgory']
 
-for i, job_title in enumerate(job_titles):
-     df_plot = df_skills_percent[df_skills_percent['job_title_short']==job_title].head(5)
-     #df_plot.plot(kind='barh',x='job_skills',y='skill_percent',ax=ax[i],title=job_title)
-     sns.barplot(data=df_plot,x='skill_percent',y='job_skills',ax=ax[i],hue='skill_count',palette='dark:b_r')
-     ax[i].set_title(job_title)
-     ax[i].set_ylabel('')
-     ax[i].set_xlabel('')
-     ax[i].get_legend().remove()
-     ax[i].set_xlim(0,70)
+    #plotting
+    fig, ax = plt.subplots(1, 2,figsize=(15,6))
 
-     for n,v in enumerate(df_plot['skill_percent']):
-          ax[i].text(v + 1, n , f'{v:.0f}%',va='center')
-     
-     if i != len(job_titles)-1:
-          ax[i].set_xticks([])
+    sns.countplot(x='gender', data=df, ax=ax[0], hue='gender')
+    ax[0].set_title('Distribution of Gender')
+    ax[0].set_xlabel('Gender')
+    ax[0].set_ylabel('Count')
 
 
+    sns.countplot(data=df,x='preferred_category',ax=ax[1],hue='preferred_category')
+    ax[1].set_title('Distribution of Preferred Categories')
+    ax[1].set_xlabel('Preferred Category')
+    ax[1].set_ylabel('Count')
 
-fig.suptitle(f'Likelihood of Skills Requested in {country} Job Postings', fontsize=13)
-fig.tight_layout(h_pad=0.5)
-plt.show()
+    plt.tight_layout()
+    plt.show()
+
 ```
+    
+![alt text](images/categorical_distribution.png) *Plot showing the distributions of gender and preferred category in the data.*
 
-### Results
+Observations:
 
-![Likelihood of Skills Requested in France Job Postings](images\skills_demand.png)
+1. Distribution of Gender is more or less similar with Male having the most count in data
+2. In preferred categories, clothing seems to be less favoured while electronics and sports are the most preferred
 
-*Bar graph visualizing the salary for the top 3 data roles and their top 5 skills associated with each.*
+### Correlation graph 
 
-### Insights:
+![alt text](images/correlation.png)*Correlation between the numerical features*
 
-- Python is the most requested skill , highly demand across all three roles, but most promimently for Data Scientists(67%) and Data Engineers(57%).
-- SQL is the most requested skill for Data Analysts and Data Engineers , with it in over half the job postings for both roles. 
-- Data Engineers and Data Scientists require more specialized technicals skills (AWS, Azure, Spark, SAS) compared to Data Analysts who are expected to be more proficient in more general data management and analysis tools (Excel, tableau) 
 
-## 2. How are in-demand skills trending for Data Analysts?
 
-To find how skills are trending in 2023 for Data Analysts, I filtered data analyst positions and grouped the skills by the month of the job postings. This got me the top 5 skills of data analysts by month, showing how popular skills were throughout 2023.
+## Data preprocessing
 
-View my notebook with detailed steps here: [skill_trend](skills_trends.ipynb).
+This encompasses data cleaning and tranformations such as normalizations, scslaing , categorical variable encoding , and feature engineering. This makes the data ready for analytical insights and model building.
 
-### Visualize Data
+### Scaling of Numerical values
+
+In this data, the values have different scales. For building the model , scaled features helps to coverage faster and prevents featured with large scales from dominating smaller scales.
 
 ```python
+#scaling
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(col_data)
+scaled_df = pd.DataFrame(scaled_data, columns=num_features)
+scaled_df.index = df.index
 
-df_plot = df_percent.iloc[:,:5]
-sns.lineplot(data=df_plot, dashes=False,palette='tab10')
-sns.set_theme(style='ticks')
-plt.title(f'Trending Top skills for {title}s in {country}')
-plt.xlabel('2023')
-plt.ylabel('Likelihood in Job Postings')
-plt.legend().remove()
-sns.despine()
-
-from matplotlib.ticker import PercentFormatter
-ax = plt.gca()
-ax.yaxis.set_major_formatter(PercentFormatter(decimals=0))
-
-
-for i in range(5):
-    plt.text(11.2,df_plot.iloc[-1,i],df_plot.columns[i])
-
+#replace original columns 
+df[num_features] = scaled_df
 ```
+## Encoding of categorical variables 
 
-### Results
-
-![Trending Top Skills for Data Analysts in France](images\skills_trend.png)  
-*Line graph visualizing the trending top skills for data analysts in France in 2023.*
-
-### Insights:
-- SQL remains the most consistently demanded skill throughout the year. This highlights its importance as a core skill in France.
-- Both Python and Tableau show relatively stable demand throughout the year with some fluctuations but remain essential skills for data analysts. 
-- There are observable dips for skills during mid year(june-july), possibly indicating the seasonal hiring trendss  
-
-## 3. How well do jobs and skills pay for Data Analysts?
-
-To identify the highest-paying roles and skills, I only got jobs in France and looked at their median salary. But first I looked at the salary distributions of common data jobs like Data Scientist, Data Engineer, and Data Analyst, to get an idea of which jobs are paid the most.
-
-View my notebook with detailed steps here: [salary_analysis](salary_analysis.ipynb).
-
-#### Visualize Data 
-
+Here I did one hot encoding to convert the categorical variables into binary vectors True or False. This is done to make the categorical data ready for the training
 
 ```python
-sns.boxplot(data=df_top6,x='salary_year_avg',y='job_title_short',order=job_order)
-sns.set_theme(style='ticks')
-plt.title('Salary Distribution in the United States')
-plt.xlabel('Yearly Salary($USD)')
-plt.ylabel('')
-ax = plt.gca()
-ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda y, pos: f'${int(y/1000)}K'))
-plt.xlim(0,600000)
-
+#categorical encoding 
+df = pd.get_dummies(df, columns=['gender','preferred_category'], drop_first=True)
 ```
 
-#### Results
+# Kmeans model training for Segmentation
 
-The graph is not that appealing and doesnt look that informative. The salary is in USD in the data source while the currency in France is in Euro. This plot works accurately with only US job data.
+Using K-means clustering, we segment customers. Steps include:
 
-![Salary Distributions of Data Jobs in France](images\salary_analysis.png)  
-*Box plot visualizing the salary distributions for the top 6 data job titles.*
+1. Determine Optimal Number of Clusters: Use the Elbow Method & Silhouette score method
+2. Apply K-means Clustering: Initialize and fit the model with the optimal number of clusters
 
-#### Insights
+View my notebook with detailed steps here: [Kmeans model Training for Segmentation](Kmeans_model.ipynb).
 
-- There's a significant variation in salary ranges across different job titles.Senior Data Engineers earn the highest salaries, with tightly clustered pay for most professionals but notable outliers indicating exceptional earning potential
+## Choosing the number of clusters
 
-- The median salaries increase with the seniority and specialization of the roles. Senior roles (Senior Data Scientist, Senior Data Engineer) not only have higher median salaries but also larger differences in typical salaries, reflecting greater variance in compensation as responsibilities increase.
-
-### Highest Paid & Most Demanded Skills for Data Analysts
-
-Next, I narrowed my analysis and focused only on data analyst roles. I looked at the highest-paid skills and the most in-demand skills. I used two bar charts to showcase these.
-
-#### Visualize Data
+Use elbow method and silhouette score to determine the optimal number of clusters
 
 ```python
+#elbow method
 
-fig, ax = plt.subplots(2, 1)
-sns.set_theme(style='ticks')
+wcss =[]
 
-#top paying skills
-sns.barplot(data=df_top_pay, x='median',y= df_top_pay.index,hue='median',ax=ax[0],palette='dark:b_r')
-ax[0].xaxis.set_major_formatter(plt.FuncFormatter(lambda y, pos: f'${int(y/1000)}K'))
-
-# top popular skills
-sns.barplot(data=df_top_popular, x='median',y= df_top_popular.index,hue='median',ax=ax[1],palette='light:b')
-
-ax[1].xaxis.set_major_formatter(plt.FuncFormatter(lambda y, pos: f'${int(y/1000)}K'))
-
-
-
-fig.tight_layout()
-
+for i in range(1,11):
+    kmeans = KMeans(n_clusters=i,init='k-means++',random_state=42)
+    kmeans.fit(df_new)
+    wcss.append(kmeans.inertia_)
 ```
+![alt text](images/elbowmethod.png)
 
-#### Results
-Here's the breakdown of the highest-paid & most in-demand skills for data analysts in France:
-
-![The Highest Paid & Most In-Demand Skills for Data Analysts in France](images\top_pay_n_high_demand_skills.png)
-*Two separate bar graphs visualizing the highest paid skills and most in-demand skills for data analysts in France*
-
-#### Insights:
-
-- The top graph shows specialized technical skills like `c`, `terraform`, and `Gitlab` are associated with higher salaries, some reaching up to $200K, suggesting that advanced technical proficiency can increase earning potential.
-
-- The bottom graph highlights that foundational skills like `Excel`, `Python`, and `Powerbi` are the most in-demand, even though they may not offer the highest salaries. This demonstrates the importance of these core skills for employability in data analysis roles.
-
-- There's a clear distinction between the skills that are highest paid and those that are most in-demand. Data analysts aiming to maximize their career potential should consider developing a diverse skill set that includes both high-paying specialized skills and widely demanded foundational skills.
-
-## 4. What are the most optimal skills to learn for Data Analysts?
-
-To identify the most optimal skills to learn ( the ones that are the highest paid and highest in demand) I calculated the percent of skill demand and the median salary of these skills. To easily identify which are the most optimal skills to learn. 
-
-View my notebook with detailed steps here: [optimal_skills](optimal_skills.ipynb).
-
-#### Visualize Data
+From elbow graph, it shows k to be 4 or 5 . Will decide after the silhouette score method
 
 ```python
-from adjustText import adjust_text
-df_skills_high_demand.plot(kind='scatter', x='skill_percent',y= 'median_salary')
+#silhouette scores to validate the no of clusters
 
+silhouette_scores = []
 
-# Add labels to points and collect them in a list
-texts = []
-for i, txt in enumerate(df_skills_high_demand.index):
-    texts.append(plt.text(df_skills_high_demand['skill_percent'].iloc[i], df_skills_high_demand['median_salary'].iloc[i], " " + txt))
-
-# Adjust text to avoid overlap and add arrows
-adjust_text(texts, arrowprops=dict(arrowstyle='->', color='gray'))
-
-
-# Get current axes, set limits, and format axes
-ax = plt.gca()
-ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, pos: f'${int(y/1000)}K')) 
-
-from matplotlib.ticker import PercentFormatter
-ax.xaxis.set_major_formatter(PercentFormatter(decimals=0))
-
-plt.tight_layout()
-plt.show()
-
+for k in range(2,11):
+    kmeans = KMeans(n_clusters=k,random_state=42)
+    kmeans.fit(df_new)
+    score = silhouette_score(df_new,kmeans.labels_)
+    silhouette_scores.append(score)
 ```
+![](images/silscore.png)
+number of clusters by silhouette score is seen to be 7 to be optimal
 
-#### Results
+So, I will be using k = 5
 
-![Most Optimal Skills for Data Analysts in France](images\optimal_skills.png)    
-*A scatter plot visualizing the most optimal skills (high paying & high demand) for data analysts in France.*
+## Model Training and Visualizations
 
-#### Insights:
-
-- `Python` appears to have the highest median salary of nearly $95K. This suggests a high value placed on Python , which is also a high demand skill(40%). This shows the importance of python for data anlaysts.
-
-- Skills such as `Python`& `SQL` are towards the higher end of the salary spectrum while also being fairly common in job listings, indicating that proficiency in these tools can lead to good opportunities in data analytics.
-
-### Visualizing Different Techonologies
-
-Let's visualize the different technologies as well in the graph. We'll add color labels based on the technology (e.g., {Programming: Python})
-
-#### Visualize Data
+Here , I will use the KMeans clustering model with the chosen number of clusters = 5 and visualize it
 
 ```python
-sns.scatterplot(data=df_skills_tech_high_demand, x='skill_percent',y='median_salary',hue='technology')
-sns.despine()
-sns.set_theme(style='ticks')
-
-from matplotlib.ticker import PercentFormatter
-ax = plt.gca()
-ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, pos: f'${int(y/1000)}K'))
-ax.xaxis.set_major_formatter(PercentFormatter(decimals=0))
-
-# Adjust layout and display plot 
-plt.tight_layout()
-plt.show()
-
+#Choose k=5 based on elbow method and silhouette score method
+kmeans = KMeans(n_clusters=5, random_state=42)
+kmeans.fit(df_new)
 ```
 
-#### Results
+Now, i will use PCA to visualize the clusters. I did PCA with three components and once again train the model using k=3 clusters after few trials and errors. 
+```python
+#visualizing cluster using PCA to 2 components
 
-![Most Optimal Skills for Data Analysts in France with Coloring by Technology](images\technology_colored.png)  
-*A scatter plot visualizing the most optimal skills (high paying & high demand) for data analysts in France with color labels for technology.*
+pca = PCA(n_components=2, random_state=42)
+pca_components = pca.fit_transform(df_new.drop('cluster',axis=1,errors='ignore'))
 
-#### Insights:
+#add PCA componenets to data frame
+df_new['PCA1'] = pca_components[:,0]
+df_new['PCA2'] = pca_components[:,1]
 
-- The scatter plot shows that most of the `programming` skills (colored blue) tend to cluster at higher salary levels compared to other categories, indicating that programming expertise might offer greater salary benefits within the data analytics field.
+#Initialize Kmeans with k=3 clusters after trials and errors
+kmeans = KMeans(n_clusters=3, random_state=42)
+labels = kmeans.fit_predict(df_new.drop(['cluster','PCA1','PCA2'],axis=1,errors='ignore'))
 
-- The analyst_tools skills (colored orange), such as Excel and Power BI, are associated with some of the highest salaries among data analyst tools. This indicates a significant demand and valuation for data analysis and visualization expertise in the industry.
+#visualize
+sns.scatterplot(data=df_new,x='PCA1', y='PCA2', hue='cluster',palette='viridis')
+```
+![alt text](images/cluster.png)
 
+## Interpreting & Visualizing Cluster Profiles 
+
+Profiling each segment to understand their unique traits and behaviors. Visualizing of clusters is done to gain further insights
+
+### 1. *Visualizing Age, Purchase Frequency & Last purchase Amount  Distribution in Each Cluster*
+![](<images/cluster distribution.png>)
+
+Here we can see that the three clusters show some unique traits which could help us in the business iniatives.
+
+### 2. *Gender Distribution Across the Segments*
+
+![alt text](images/genderdist.png)
+Here we can see that each segment has a unique gender .
+### 3. *Distribution of Preferred Categories*
+![alt text](images/prefcatdist.png)
+
+1. Home Garden & Electronics are the preferred categories in segment 1 which is also male dominated
+2. Groceries are the preferred categories in segment 2 which is female dominated
+3. Again home & garden and electronics are the preferred categories in segment 3 where the other gender dominates
+
+In the three profiles , clothing is not a very preferred category.
+
+## Cluster characteristics & Recommendations
+
+### Segment 1 
+
+- Gender : **Male**
+- Average Age : **30**
+- Most Preferred Category : Home & Garden , Electronics
+- Average Income: **$90.8K**
+- Purchase Frequency : **37**
+- Low spending score : 43 
+
+*Recommendations* : 
+
+1.  Focus on Home Garden and Electronics promotions & personalized ads targeting males around the late 20s to early 30s ( tech savy) with medium to high income .
+2. Implement points based programs and send emails rewarding frequent purchases and further engagement.
+
+
+### Segment 2 
+
+- Gender : **Female**
+- Average Age : **48**
+- Most Preferred Category : Groceries
+- Average Income: **$97.6K**
+- Purchase Frequency : **18**
+- Average spending score : 55
+
+*Recommendations* 
+1. Diversify grocery product offerings including premium products to cater to this group having a moderate  spending score but higher income
+2. To increase their purchase frequency, develop strategies such as same day delivery or subscription plans
+3. Highlight products that resonate with this age group, such as health-focused or family-oriented groceries.
+
+### Segment 3
+
+- Gender : **Others**
+- Average Age : **56**
+- Most Preferred Category : Home & Garden , Electronics
+- Average Income: **$77.9K**
+- Purchase Frequency : **27**
+- Average spending score : 54
+
+*Recommendations* 
+1. Offer bundled deals combining Home & Garden and Electronics products, paired with incentives like free installation or extended warrantie
+2. Create a loyalty program that rewards frequent purchases with discounts, exclusive deals, or added perks like free delivery or extended warranties.
+3. Develop engaging DIY tutorials and how-to guides to highlight product functionality and encourage informed purchases.
 
 # What I Learned
 
-Throughout this project, I deepened my understanding of the data analyst job market and enhanced my technical skills in Python, especially in data manipulation and visualization. Here are a few specific things I learned:
+Throughout this project, I deepened my understanding of the customer segmentaion in marketing and enhanced my technical skills in Python, especially in data manipulation, visualization and training unsupervised models using KMeans. Here are a few specific things I learned:
 
-- **Advanced Python Usage**: Utilizing libraries such as Pandas for data manipulation, Seaborn and Matplotlib for data visualization, and other libraries helped me perform complex data analysis tasks more efficiently.
-- **Data Cleaning Importance**: I learned that thorough data cleaning and preparation are crucial before any analysis can be conducted, ensuring the accuracy of insights derived from the data.
-- **Strategic Skill Analysis**: The project emphasized the importance of aligning one's skills with market demand. Understanding the relationship between skill demand, salary, and job availability allows for more strategic career planning in the tech industry.
+- **Advanced Python Usage**: Utilizing libraries such as Pandas for data manipulation, Seaborn and Matplotlib for data visualization, and Scikit-learn for KMeans  helped me perform complex data analysis tasks more efficiently.
+- **Gaining insights from Segmentation**: I gained an understanding of how to group customers based on demographics and behaviours to identify actionable patterns.
+- **Practical Applications**: Learned how customer segmentation can inform marketing strategies like targeted campaigns and loyalty programs, translating data into actionable business insights.
 
 
 # Insights
 
-This project provided several general insights into the data job market for analysts:
+This project provided several general insights from segmenting customers 
 
-- **Skill Demand and Salary Correlation**: There is a clear correlation between the demand for specific skills and the salaries these skills command. Advanced and specialized skills like Python and AWS often lead to higher salaries.
-- **Market Trends**: There are changing trends in skill demand, highlighting the dynamic nature of the data job market. Keeping up with these trends is essential for career growth in data analytics.
-- **Economic Value of Skills**: Understanding which skills are both in-demand and well-compensated can guide data analysts in prioritizing learning to maximize their economic returns.
+- **Customer Demographics & Behaviours** :Customer demographics and behavioral data, such as income and spending scores, are crucial in understanding market segments.
+- **Marketing analysis**:The alignment of marketing strategies with customer preferences (e.g., preferred categories) leads to better engagement and retention.
+- **Optimization of resources**: Segmentation enables resource optimization by focusing efforts on high-potential customer groups.
 
+# Challenges 
 
-# Challenges I Faced
-
-This project was not without its challenges, but it provided good learning opportunities:
-
-- **Data Inconsistencies**: Handling missing or inconsistent data entries requires careful consideration and thorough data-cleaning techniques to ensure the integrity of the analysis.
-- **Complex Data Visualization**: Designing effective visual representations of complex datasets was challenging but critical for conveying insights clearly and compellingly.
-- **Balancing Breadth and Depth**: Deciding how deeply to dive into each analysis while maintaining a broad overview of the data landscape required constant balancing to ensure comprehensive coverage without getting lost in details.
-
+- **Data Imbalance**: Some demographic groups were underrepresented, impacting the fairness of the segmentation.
+- **Choosing the Right Number of Clusters**: Deciding the optimal number of customer segments required multiple iterations and trials &b errors using the elbow method and silhouette scores.
 
 # Conclusion
 
-This exploration into the data analyst job market has been incredibly informative, highlighting the critical skills and trends that shape this evolving field. The insights I got enhance my understanding and provide actionable guidance for anyone looking to advance their career in data analytics. As the market continues to change, ongoing analysis will be essential to stay ahead in data analytics. This project is a good foundation for future explorations and underscores the importance of continuous learning and adaptation in the data field.As someone navigating the job market for good opportunities , this project was indeed very helpful!
+Customer segmentation plays a key role in helping businesses gain valuable insights into their customer base and tailor their offerings to meet specific needs. With the power of machine learning, businesses can uncover patterns and trends that traditional methods may miss. This project underscores the importance of using data-driven approaches to inform decision-making, allowing for more effective marketing strategies and a higher level of customer satisfaction.
 
 
 
